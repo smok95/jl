@@ -12,6 +12,7 @@ type Stringer func(ctx *Context, v interface{}) string
 
 var _ = Stringer(DefaultStringer)
 var _ = Stringer(ErrorStringer)
+var _ = Stringer(NumberStringer)
 
 // DefaultStringer attempts to turn a field into string by attempting the following in order
 // 1. casting it to a string
@@ -47,7 +48,24 @@ func ErrorStringer(ctx *Context, v interface{}) string {
 		stackStr := "\t" + strings.Join(lines, "\n\t")
 		w.WriteString(stackStr)
 		return w.String()
-	}  else {
+	} else {
 		return DefaultStringer(ctx, v)
 	}
+}
+
+func NumberStringer(ctx *Context, v interface{}) string {
+	var s string
+	if tmp, ok := v.(string); ok {
+		s = tmp
+	} else if rawMsg, ok := v.(json.RawMessage); ok {
+		var unmarshaled interface{}
+		if err := json.Unmarshal(rawMsg, &unmarshaled); err != nil {
+			s = string(rawMsg)
+		} else {
+			s = string(rawMsg)
+		}
+	} else {
+		s = fmt.Sprintf("%v", v)
+	}
+	return s
 }

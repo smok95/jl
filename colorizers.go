@@ -54,3 +54,20 @@ func (c *mappingColorizer) Transform(ctx *Context, input string) string {
 	}
 	return input
 }
+
+type timeColorizer struct {
+}
+
+// ColorSequence assigns colors to inputs sequentially. Once an input is seen and assigned a color, future iputs with
+// the same value will always be assigned the same color.
+func ColorTimestamp() *timeColorizer {
+	return &timeColorizer{}
+}
+
+func (a *timeColorizer) Transform(ctx *Context, input string) string {
+	if ctx.DisableColor {
+		return input
+	}
+
+	return ColorText(HiGreen, input)
+}
