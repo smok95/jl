@@ -36,12 +36,12 @@ type FieldFmt struct {
 // DefaultCompactPrinterFieldFmt is a format for the CompactPrinter that tries to present logs in an easily skimmable manner
 // for most types of logs.
 var DefaultCompactPrinterFieldFmt = []FieldFmt{{
-	Name:         "level",
-	Finders:      []FieldFinder{ByNames("level", "lvl", "severity", "logLevel")},
+	Name:         "lvl",
+	Finders:      []FieldFinder{ByNames("level", "lvl")},
 	Transformers: []Transformer{Truncate(4), UpperCase, ColorMap(LevelColors)},
 }, {
-	Name:         "time",
-	Finders:      []FieldFinder{ByNames("timestamp", "time", "ts")},
+	Name:         "ts",
+	Finders:      []FieldFinder{ByNames("time", "ts")},
 	Transformers: []Transformer{UnixTimestamp, ColorTimestamp()},
 	Stringer:     NumberStringer,
 }, {
@@ -52,15 +52,8 @@ var DefaultCompactPrinterFieldFmt = []FieldFmt{{
 	Finders:      []FieldFinder{ByNames("logger", "caller")},
 	Transformers: []Transformer{Ellipsize(20), Format("%s|"), LeftPad(21), ColorSequence(AllColors)},
 }, {
-	Name:         "traceId",
-	Transformers: []Transformer{Format("%s|"), ColorSequence(AllColors)},
-}, {
-	Name:    "message",
-	Finders: []FieldFinder{ByNames("message", "msg", "textPayload", "jsonPayload.message")},
-}, {
-	Name:     "errors",
-	Finders:  []FieldFinder{LogrusErrorFinder, ByNames("exceptions", "exception", "error")},
-	Stringer: ErrorStringer,
+	Name:    "msg",
+	Finders: []FieldFinder{ByNames("message", "msg")},
 }}
 
 // NewCompactPrinter allocates and returns a new compact printer.
@@ -76,6 +69,7 @@ func (p *CompactPrinter) Print(entry *Entry) {
 		fmt.Fprintln(p.Out, string(entry.Raw))
 		return
 	}
+
 	for i, fieldFmt := range p.FieldFormats {
 		ctx := Context{
 			DisableColor:    p.DisableColor,
@@ -89,6 +83,25 @@ func (p *CompactPrinter) Print(entry *Entry) {
 			p.Out.Write([]byte(formattedField))
 		}
 	}
+
+	var skip bool
+	for key, value := range entry.Partials {
+		skip = false
+
+		for _, fieldFmt := range p.FieldFormats {
+			if fieldFmt.Name == key {
+				skip = true
+				break
+			}
+		}
+
+		if skip {
+			continue
+		}
+
+		p.Out.Write([]byte(fmt.Sprintf(" %s:=%v", key, string(value))))
+	}
+
 	p.Out.Write([]byte("\n"))
 }
 
