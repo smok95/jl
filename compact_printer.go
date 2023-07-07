@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 	"unicode"
+
+	"github.com/emirpasic/gods/maps/treemap"
 )
 
 // CompactPrinter can print logs in a variety of compact formats, specified by FieldFormats.
@@ -84,6 +86,8 @@ func (p *CompactPrinter) Print(entry *Entry) {
 		}
 	}
 
+	m := treemap.NewWithStringComparator()
+
 	var skip bool
 	for key, value := range entry.Partials {
 		skip = false
@@ -99,7 +103,11 @@ func (p *CompactPrinter) Print(entry *Entry) {
 			continue
 		}
 
-		p.Out.Write([]byte(fmt.Sprintf(" %s:=%v", key, string(value))))
+		m.Put(key, " "+key+":="+string(value))
+	}
+
+	for _, v := range m.Values() {
+		p.Out.Write([]byte(v.(string)))
 	}
 
 	p.Out.Write([]byte("\n"))
